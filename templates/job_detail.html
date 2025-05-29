@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+
+{% block title %}{{ job.title }} - Job Details - Resume Match AI{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="bi bi-briefcase"></i> {{ job.title }}</h2>
+        <p class="text-muted">Job Details and Requirements Analysis</p>
+    </div>
+    <div>
+        <a href="{{ url_for('candidates', job_id=job.id) }}" class="btn btn-primary">
+            <i class="bi bi-people"></i> View Candidates
+        </a>
+        <a href="{{ url_for('upload') }}" class="btn btn-outline-secondary ms-2">
+            <i class="bi bi-upload"></i> Upload More Resumes
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Job Description -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-file-text"></i> Job Description
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="job-description-content">
+                    {{ job.description|replace('\n', '<br>')|safe }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Requirements Analysis -->
+        {% if job.requirements %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-list-check"></i> Extracted Requirements
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        {% for requirement in job.requirements[:10] %}
+                            <li class="list-group-item border-0 px-0">
+                                <i class="bi bi-check-circle text-success me-2"></i>
+                                {{ requirement }}
+                            </li>
+                        {% endfor %}
+                        {% if job.requirements|length > 10 %}
+                            <li class="list-group-item border-0 px-0 text-muted">
+                                <i class="bi bi-three-dots me-2"></i>
+                                And {{ job.requirements|length - 10 }} more requirements...
+                            </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Job Statistics -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-bar-chart"></i> Job Statistics
+                </h5>
+            </div>
+            <div class="card-body">
+                {% set candidate_count = job.candidates|length %}
+                {% set match_scores = job.match_scores %}
+                
+                <div class="row text-center mb-3">
+                    <div class="col-6">
+                        <div class="border-end">
+                            <h3 class="text-primary mb-1">{{ candidate_count }}</h3>
+                            <small class="text-muted">Candidates</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        {% if match_scores %}
+                            {% set avg_score = (match_scores|sum(attribute='overall_score') / match_scores|length)|round(1) %}
+                            <h3 class="mb-1">
+                                <span class="badge {{ 'bg-success' if avg_score >= 70 else 'bg-warning' if avg_score >= 50 else 'bg-danger' }}">
+                                    {{ avg_score }}%
+                                </span>
+                            </h3>
+                            <small class="text-muted">Avg Score</small>
+                        {% else %}
+                            <h3 class="text-muted mb-1">--</h3>
+                            <small class="text-muted">No Scores</small>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if match_scores %}
+                    <div class="mb-3">
+                        <h6 class="small text-muted mb-2">Score Distribution:</h6>
+                        {% set excellent = match_scores|selectattr('overall_score', 'ge', 80)|list|length %}
+                        {% set good = match_scores|selectattr('overall_score', 'ge', 60)|selectattr('overall_score', 'lt', 80)|list|length %}
+                        {% set fair = match_scores|selectattr('overall_score', 'ge', 40)|selectattr('overall_score', 'lt', 60)|list|length %}
+                        {% set poor = match_scores|selectattr('overall_score', 'lt', 40)|list|length %}
+                        
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span>Excellent (80%+)</span>
+                            <span class="badge bg-success">{{ excellent }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span>Good (60-79%)</span>
+                            <span class="badge bg-warning">{{ good }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span>Fair (40-59%)</span>
+                            <span class="badge bg-secondary">{{ fair }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between small">
+                            <span>Poor (&lt;40%)</span>
+                            <span class="badge bg-danger">{{ poor }}</span>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div class="text-muted small">
+                    <strong>Created:</strong> {{ job.created_at.strftime('%Y-%m-%d %H:%M') }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Skills Required -->
+        {% if job.skills_required %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-gear"></i> Required Skills
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for category, skills in job.skills_required.items() %}
+                        <div class="mb-3">
+                            <h6 class="small text-muted mb-2 text-capitalize">
+                                {{ category.replace('_', ' ') }} Skills:
+                            </h6>
+                            <div>
+                                {% for skill in skills %}
+                                    {% set weight = job.skill_weights.get(skill, 0.5) if job.skill_weights else 0.5 %}
+                                    <span class="badge me-1 mb-1 {{ 'bg-primary' if weight > 0.7 else 'bg-secondary' if weight > 0.4 else 'bg-light text-dark' }}">
+                                        {{ skill }}
+                                        {% if weight > 0.7 %}
+                                            <i class="bi bi-star-fill"></i>
+                                        {% elif weight > 0.4 %}
+                                            <i class="bi bi-star"></i>
+                                        {% endif %}
+                                    </span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                    
+                    <div class="text-muted small mt-3">
+                        <i class="bi bi-info-circle"></i> 
+                        Skill importance: 
+                        <i class="bi bi-star-fill"></i> High, 
+                        <i class="bi bi-star"></i> Medium, 
+                        No star = Low
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Quick Actions -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-lightning"></i> Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    {% if candidate_count > 0 %}
+                        <a href="{{ url_for('candidates', job_id=job.id) }}" class="btn btn-primary">
+                            <i class="bi bi-people"></i> View All Candidates
+                        </a>
+                        <a href="{{ url_for('export_candidates', job_id=job.id, threshold=70) }}" class="btn btn-success">
+                            <i class="bi bi-download"></i> Export Top Candidates
+                        </a>
+                    {% endif %}
+                    
+                    <a href="{{ url_for('upload') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-upload"></i> Upload More Resumes
+                    </a>
+                    
+                    <button class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#shareModal">
+                        <i class="bi bi-share"></i> Share Job
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Share Modal -->
+<div class="modal fade" id="shareModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-share"></i> Share Job Details
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Share this job details page:</p>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="shareUrl" 
+                           value="{{ request.url }}" readonly>
+                    <button class="btn btn-outline-secondary" type="button" id="copyUrl">
+                        <i class="bi bi-clipboard"></i> Copy
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Score Chart (if there are candidates) -->
+{% if match_scores %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-graph-up"></i> Score Distribution Chart
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="scoreChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Copy URL functionality
+    const copyUrlBtn = document.getElementById('copyUrl');
+    const shareUrlInput = document.getElementById('shareUrl');
+    
+    if (copyUrlBtn) {
+        copyUrlBtn.addEventListener('click', function() {
+            shareUrlInput.select();
+            shareUrlInput.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(shareUrlInput.value);
+            
+            // Show feedback
+            const originalText = this.innerHTML;
+            this.innerHTML = '<i class="bi bi-check"></i> Copied!';
+            setTimeout(() => {
+                this.innerHTML = originalText;
+            }, 2000);
+        });
+    }
+
+    // Score distribution chart
+    {% if match_scores %}
+        const ctx = document.getElementById('scoreChart').getContext('2d');
+        const scores = {{ match_scores|map(attribute='overall_score')|list }};
+        
+        // Create score ranges
+        const ranges = {
+            'Excellent (80-100%)': scores.filter(s => s >= 80).length,
+            'Good (60-79%)': scores.filter(s => s >= 60 && s < 80).length,
+            'Fair (40-59%)': scores.filter(s => s >= 40 && s < 60).length,
+            'Poor (0-39%)': scores.filter(s => s < 40).length
+        };
+
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(ranges),
+                datasets: [{
+                    data: Object.values(ranges),
+                    backgroundColor: [
+                        '#198754', // success
+                        '#ffc107', // warning
+                        '#6c757d', // secondary
+                        '#dc3545'  // danger
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true
+                        }
+                    }
+                }
+            }
+        });
+    {% endif %}
+});
+</script>
+{% endblock %}

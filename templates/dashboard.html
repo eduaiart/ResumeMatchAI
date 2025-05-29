@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Resume Match AI{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="bi bi-speedometer2"></i> Dashboard</h2>
+        <p class="text-muted">Overview of all jobs and candidate matching results</p>
+    </div>
+    <a href="{{ url_for('upload') }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> Add New Job
+    </a>
+</div>
+
+{% if job_stats %}
+    <div class="row g-4">
+        {% for stat in job_stats %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">{{ stat.job.title }}</h5>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                                    data-bs-toggle="dropdown">
+                                <i class="bi bi-three-dots"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('job_detail', job_id=stat.job.id) }}">
+                                        <i class="bi bi-eye"></i> View Details
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('candidates', job_id=stat.job.id) }}">
+                                        <i class="bi bi-people"></i> View Candidates
+                                    </a>
+                                </li>
+                                {% if stat.candidate_count > 0 %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" href="{{ url_for('export_candidates', job_id=stat.job.id) }}">
+                                        <i class="bi bi-download"></i> Export Results
+                                    </a>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="card-body">
+                        <div class="row text-center mb-3">
+                            <div class="col-6">
+                                <div class="border-end">
+                                    <h4 class="text-primary mb-1">{{ stat.candidate_count }}</h4>
+                                    <small class="text-muted">Candidates</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                {% if stat.avg_score > 0 %}
+                                    <h4 class="mb-1">
+                                        <span class="badge {{ 'bg-success' if stat.avg_score >= 70 else 'bg-warning' if stat.avg_score >= 50 else 'bg-danger' }}">
+                                            {{ stat.avg_score }}%
+                                        </span>
+                                    </h4>
+                                    <small class="text-muted">Avg Score</small>
+                                {% else %}
+                                    <h4 class="text-muted mb-1">--</h4>
+                                    <small class="text-muted">No Scores</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Job Description Preview -->
+                        <p class="text-muted small mb-3">
+                            {{ stat.job.description[:100] }}{% if stat.job.description|length > 100 %}...{% endif %}
+                        </p>
+                        
+                        <!-- Skills Preview -->
+                        {% if stat.job.skills_required %}
+                            <div class="mb-3">
+                                <h6 class="small text-muted mb-2">Key Skills Required:</h6>
+                                <div>
+                                    {% set all_skills = [] %}
+                                    {% for category, skills in stat.job.skills_required.items() %}
+                                        {% for skill in skills[:3] %}
+                                            {{ all_skills.append(skill) or '' }}
+                                        {% endfor %}
+                                    {% endfor %}
+                                    
+                                    {% for skill in all_skills[:5] %}
+                                        <span class="badge bg-secondary me-1">{{ skill }}</span>
+                                    {% endfor %}
+                                    {% if all_skills|length > 5 %}
+                                        <span class="badge bg-light text-dark">+{{ all_skills|length - 5 }} more</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                Created: {{ stat.job.created_at.strftime('%Y-%m-%d') }}
+                            </small>
+                            {% if stat.candidate_count > 0 %}
+                                <a href="{{ url_for('candidates', job_id=stat.job.id) }}" 
+                                   class="btn btn-sm btn-primary">
+                                    View Results
+                                </a>
+                            {% else %}
+                                <a href="{{ url_for('upload') }}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    Add Candidates
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Summary Statistics -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-bar-chart"></i> Summary Statistics
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <h3 class="text-primary">{{ job_stats|length }}</h3>
+                            <p class="text-muted mb-0">Total Jobs</p>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 class="text-success">{{ job_stats|sum(attribute='candidate_count') }}</h3>
+                            <p class="text-muted mb-0">Total Candidates</p>
+                        </div>
+                        <div class="col-md-3">
+                            {% set processed_jobs = job_stats|selectattr('candidate_count', 'gt', 0)|list %}
+                            <h3 class="text-info">{{ processed_jobs|length }}</h3>
+                            <p class="text-muted mb-0">Jobs Processed</p>
+                        </div>
+                        <div class="col-md-3">
+                            {% if processed_jobs %}
+                                {% set overall_avg = (processed_jobs|sum(attribute='avg_score') / processed_jobs|length)|round(1) %}
+                                <h3 class="text-warning">{{ overall_avg }}%</h3>
+                            {% else %}
+                                <h3 class="text-muted">--</h3>
+                            {% endif %}
+                            <p class="text-muted mb-0">Overall Avg Score</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% else %}
+    <!-- Empty State -->
+    <div class="text-center py-5">
+        <div class="mb-4">
+            <i class="bi bi-briefcase display-1 text-muted"></i>
+        </div>
+        <h3>No Jobs Created Yet</h3>
+        <p class="text-muted mb-4">
+            Start by creating your first job description to begin matching candidates.
+        </p>
+        <a href="{{ url_for('upload') }}" class="btn btn-primary btn-lg">
+            <i class="bi bi-plus-circle"></i> Create Your First Job
+        </a>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-refresh every 30 seconds if there are active uploads
+    const hasActiveJobs = {{ 'true' if job_stats else 'false' }};
+    if (hasActiveJobs) {
+        setTimeout(function() {
+            location.reload();
+        }, 30000);
+    }
+});
+</script>
+{% endblock %}

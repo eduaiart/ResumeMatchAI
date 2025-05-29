@@ -1,0 +1,366 @@
+/* Custom styles for Resume Match AI */
+
+:root {
+    --primary-color: #0d6efd;
+    --success-color: #198754;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --info-color: #0dcaf0;
+    --light-bg: #f8f9fa;
+    --border-radius: 0.375rem;
+}
+
+/* General Layout */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1200px;
+}
+
+/* Navigation */
+.navbar-brand {
+    font-weight: 600;
+    font-size: 1.25rem;
+}
+
+.navbar-nav .nav-link {
+    font-weight: 500;
+    margin-right: 0.5rem;
+}
+
+/* Cards */
+.card {
+    border: 1px solid rgba(255, 255, 255, 0.125);
+    border-radius: var(--border-radius);
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: all 0.15s ease-in-out;
+}
+
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+.card-header {
+    background-color: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.125);
+    font-weight: 600;
+}
+
+/* Buttons */
+.btn {
+    font-weight: 500;
+    border-radius: var(--border-radius);
+    transition: all 0.15s ease-in-out;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1.125rem;
+}
+
+/* Badges */
+.badge {
+    font-weight: 500;
+    border-radius: 0.25rem;
+}
+
+/* Score badges with improved visibility */
+.badge.bg-success {
+    background-color: var(--success-color) !important;
+}
+
+.badge.bg-warning {
+    background-color: var(--warning-color) !important;
+    color: #000 !important;
+}
+
+.badge.bg-danger {
+    background-color: var(--danger-color) !important;
+}
+
+/* Skills container */
+.skills-container {
+    max-height: 120px;
+    overflow-y: auto;
+}
+
+.skills-container::-webkit-scrollbar {
+    width: 4px;
+}
+
+.skills-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+}
+
+.skills-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+}
+
+/* Candidate cards */
+.candidate-card {
+    transition: all 0.2s ease-in-out;
+}
+
+.candidate-card:hover {
+    transform: translateY(-2px);
+}
+
+.candidate-card .card {
+    height: 100%;
+}
+
+/* Job description content */
+.job-description-content {
+    max-height: 400px;
+    overflow-y: auto;
+    line-height: 1.7;
+}
+
+.job-description-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.job-description-content::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.job-description-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+/* Progress bars */
+.progress {
+    height: 0.75rem;
+    border-radius: var(--border-radius);
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.progress-bar {
+    border-radius: var(--border-radius);
+}
+
+/* File upload area */
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* Alert improvements */
+.alert {
+    border: none;
+    border-radius: var(--border-radius);
+    font-weight: 500;
+}
+
+.alert-dismissible .btn-close {
+    padding: 0.75rem;
+}
+
+/* Modal improvements */
+.modal-content {
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.125);
+}
+
+.modal-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.125);
+}
+
+/* Table improvements */
+.table {
+    border-color: rgba(255, 255, 255, 0.125);
+}
+
+.table thead th {
+    border-bottom: 2px solid rgba(255, 255, 255, 0.125);
+    font-weight: 600;
+}
+
+/* Form controls */
+.form-control,
+.form-select {
+    border-color: rgba(255, 255, 255, 0.125);
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.form-control:focus,
+.form-select:focus {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* Range slider */
+.form-range::-webkit-slider-thumb {
+    background-color: var(--primary-color);
+}
+
+.form-range::-moz-range-thumb {
+    background-color: var(--primary-color);
+    border: none;
+}
+
+/* Loading states */
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .container {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .btn-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .btn-group .btn {
+        width: 100%;
+    }
+    
+    .candidate-card .row {
+        flex-direction: column;
+    }
+    
+    .candidate-card .col-md-4 {
+        margin-top: 1rem;
+    }
+}
+
+/* Animation for score updates */
+@keyframes scoreUpdate {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.score-updating {
+    animation: scoreUpdate 0.3s ease-in-out;
+}
+
+/* Empty state styling */
+.empty-state {
+    padding: 3rem 1rem;
+    text-align: center;
+}
+
+.empty-state i {
+    color: rgba(255, 255, 255, 0.4);
+    margin-bottom: 1rem;
+}
+
+/* Skill gap indicators */
+.skill-gap {
+    opacity: 0.8;
+    font-size: 0.875rem;
+}
+
+/* Chart container */
+#scoreChart {
+    max-height: 300px !important;
+}
+
+/* File preview */
+#filePreview .badge {
+    display: inline-block;
+    margin: 0.25rem;
+    padding: 0.5rem 0.75rem;
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Status indicators */
+.status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 0.5rem;
+}
+
+.status-success {
+    background-color: var(--success-color);
+}
+
+.status-warning {
+    background-color: var(--warning-color);
+}
+
+.status-danger {
+    background-color: var(--danger-color);
+}
+
+/* Utility classes */
+.text-truncate-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.text-truncate-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Footer */
+footer {
+    margin-top: auto;
+    border-top: 1px solid rgba(255, 255, 255, 0.125);
+}
+
+/* Focus indicators for accessibility */
+.btn:focus,
+.form-control:focus,
+.form-select:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+    .navbar,
+    .btn,
+    footer {
+        display: none !important;
+    }
+    
+    .card {
+        border: 1px solid #000 !important;
+        box-shadow: none !important;
+    }
+    
+    .badge {
+        border: 1px solid #000 !important;
+    }
+}

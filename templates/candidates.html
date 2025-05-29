@@ -1,0 +1,364 @@
+{% extends "base.html" %}
+
+{% block title %}Candidates - {{ job.title }} - Resume Match AI{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2>
+            <i class="bi bi-people"></i> 
+            Candidates for: {{ job.title }}
+        </h2>
+        <p class="text-muted">Ranked by overall match score</p>
+    </div>
+    <div>
+        {% if candidates_with_scores %}
+            <div class="btn-group">
+                <a href="{{ url_for('export_candidates', job_id=job.id) }}" class="btn btn-success">
+                    <i class="bi bi-download"></i> Export Results
+                </a>
+                <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#weightsModal">
+                    <i class="bi bi-sliders"></i> Adjust Weights
+                </button>
+            </div>
+        {% endif %}
+        <a href="{{ url_for('job_detail', job_id=job.id) }}" class="btn btn-outline-primary ms-2">
+            <i class="bi bi-briefcase"></i> View Job Details
+        </a>
+    </div>
+</div>
+
+{% if candidates_with_scores %}
+    <!-- Filtering and Sorting -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-4">
+                    <label for="scoreFilter" class="form-label small">Minimum Score:</label>
+                    <select class="form-select form-select-sm" id="scoreFilter">
+                        <option value="0">All Candidates</option>
+                        <option value="80">80%+ (Excellent)</option>
+                        <option value="70">70%+ (Good)</option>
+                        <option value="60">60%+ (Acceptable)</option>
+                        <option value="50">50%+ (Marginal)</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="skillFilter" class="form-label small">Filter by Skill:</label>
+                    <input type="text" class="form-control form-control-sm" id="skillFilter" 
+                           placeholder="e.g., Python, JavaScript">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small">Export Options:</label>
+                    <div class="btn-group-sm">
+                        <a href="{{ url_for('export_candidates', job_id=job.id, threshold=70) }}" 
+                           class="btn btn-sm btn-outline-success">Export 70%+</a>
+                        <a href="{{ url_for('export_candidates', job_id=job.id, threshold=80) }}" 
+                           class="btn btn-sm btn-outline-success">Export 80%+</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Candidates List -->
+    <div class="row g-4" id="candidatesList">
+        {% for candidate, match_score in candidates_with_scores %}
+            <div class="col-12 candidate-card" 
+                 data-score="{{ match_score.overall_score }}" 
+                 data-skills="{{ (candidate.extracted_skills or [])|join(',') }}">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <div>
+                                        <h5 class="card-title mb-1">
+                                            <span class="badge bg-primary me-2">
+                                                #{{ loop.index }}
+                                            </span>
+                                            {{ candidate.name }}
+                                        </h5>
+                                        <div class="text-muted small">
+                                            {% if candidate.email %}
+                                                <i class="bi bi-envelope me-1"></i>{{ candidate.email }}
+                                            {% endif %}
+                                            {% if candidate.phone %}
+                                                <i class="bi bi-telephone ms-3 me-1"></i>{{ candidate.phone }}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <h4 class="mb-1">
+                                            <span class="badge {{ 'bg-success' if match_score.overall_score >= 80 else 'bg-warning' if match_score.overall_score >= 60 else 'bg-danger' }}">
+                                                {{ match_score.overall_score }}%
+                                            </span>
+                                        </h4>
+                                        <small class="text-muted">Overall Match</small>
+                                    </div>
+                                </div>
+
+                                <!-- Score Breakdown -->
+                                <div class="row mb-3">
+                                    <div class="col-sm-3">
+                                        <div class="text-center">
+                                            <div class="fw-bold">{{ match_score.skill_match_score or 0 }}%</div>
+                                            <small class="text-muted">Skills</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-3">
+                                        <div class="text-center">
+                                            <div class="fw-bold">{{ match_score.experience_score or 0 }}%</div>
+                                            <small class="text-muted">Experience</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-3">
+                                        <div class="text-center">
+                                            <div class="fw-bold">{{ match_score.education_score or 0 }}%</div>
+                                            <small class="text-muted">Education</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-3">
+                                        <div class="text-center">
+                                            <div class="fw-bold">{{ candidate.experience_years or 0 }}</div>
+                                            <small class="text-muted">Years Exp</small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Match Justification -->
+                                <div class="mb-3">
+                                    <h6 class="small text-muted mb-1">Match Analysis:</h6>
+                                    <p class="small mb-0">{{ match_score.match_justification }}</p>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <!-- Skills Section -->
+                                <div class="mb-3">
+                                    <h6 class="small text-muted mb-2">Extracted Skills:</h6>
+                                    {% if candidate.extracted_skills %}
+                                        <div class="skills-container">
+                                            {% for skill in candidate.extracted_skills[:8] %}
+                                                <span class="badge bg-secondary me-1 mb-1">{{ skill }}</span>
+                                            {% endfor %}
+                                            {% if candidate.extracted_skills|length > 8 %}
+                                                <span class="badge bg-light text-dark">+{{ candidate.extracted_skills|length - 8 }} more</span>
+                                            {% endif %}
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted small">No skills extracted</span>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Skill Gaps -->
+                                {% if match_score.skill_gaps %}
+                                    <div class="mb-3">
+                                        <h6 class="small text-muted mb-2">Missing Skills:</h6>
+                                        <div>
+                                            {% for gap in match_score.skill_gaps[:5] %}
+                                                <span class="badge bg-danger me-1 mb-1">{{ gap }}</span>
+                                            {% endfor %}
+                                            {% if match_score.skill_gaps|length > 5 %}
+                                                <span class="badge bg-light text-dark">+{{ match_score.skill_gaps|length - 5 }} more</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                {% endif %}
+
+                                <!-- Actions -->
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-sm btn-outline-primary" 
+                                            data-bs-toggle="collapse" 
+                                            data-bs-target="#details{{ loop.index }}">
+                                        <i class="bi bi-eye"></i> Details
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-success">
+                                        <i class="bi bi-check-circle"></i> Shortlist
+                                    </button>
+                                    <a href="{{ url_for('static', filename='uploads/' + candidate.filename) }}" 
+                                       class="btn btn-sm btn-outline-secondary" target="_blank">
+                                        <i class="bi bi-download"></i> Resume
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Collapsible Details -->
+                        <div class="collapse mt-3" id="details{{ loop.index }}">
+                            <hr>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="small text-muted">Education:</h6>
+                                    {% if candidate.education %}
+                                        <ul class="small">
+                                            {% for edu in candidate.education[:3] %}
+                                                <li>{{ edu }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    {% else %}
+                                        <p class="small text-muted">No education information extracted</p>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="small text-muted">Detailed Breakdown:</h6>
+                                    {% if match_score.detailed_breakdown %}
+                                        <div class="small">
+                                            {% set breakdown = match_score.detailed_breakdown %}
+                                            {% if breakdown.matched_skills %}
+                                                <strong>Matched Skills:</strong> {{ breakdown.matched_skills|join(', ') }}<br>
+                                            {% endif %}
+                                            <strong>File:</strong> {{ candidate.filename }}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- Skill Weights Modal -->
+    <div class="modal fade" id="weightsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-sliders"></i> Adjust Skill Weights
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted">Adjust the importance of different skills for this job. Higher weights give more importance to specific skills in the matching algorithm.</p>
+                    
+                    {% if job.skills_required %}
+                        <form id="weightsForm">
+                            {% for category, skills in job.skills_required.items() %}
+                                <h6 class="text-capitalize">{{ category.replace('_', ' ') }} Skills</h6>
+                                <div class="row mb-3">
+                                    {% for skill in skills %}
+                                        <div class="col-md-6 mb-2">
+                                            <label for="weight_{{ skill }}" class="form-label small">{{ skill }}</label>
+                                            <input type="range" class="form-range" 
+                                                   id="weight_{{ skill }}" 
+                                                   name="weight_{{ skill }}"
+                                                   min="0" max="1" step="0.1" 
+                                                   value="{{ job.skill_weights.get(skill, 0.5) if job.skill_weights else 0.5 }}">
+                                            <div class="d-flex justify-content-between">
+                                                <small>Low</small>
+                                                <small class="fw-bold" id="value_{{ skill }}">{{ job.skill_weights.get(skill, 0.5) if job.skill_weights else 0.5 }}</small>
+                                                <small>High</small>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endfor %}
+                        </form>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveWeights">
+                        <i class="bi bi-save"></i> Save & Recalculate
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% else %}
+    <!-- Empty State -->
+    <div class="text-center py-5">
+        <div class="mb-4">
+            <i class="bi bi-people display-1 text-muted"></i>
+        </div>
+        <h3>No Candidates Uploaded</h3>
+        <p class="text-muted mb-4">
+            Upload candidate resumes to see intelligent matching results for this job.
+        </p>
+        <a href="{{ url_for('upload') }}" class="btn btn-primary btn-lg">
+            <i class="bi bi-upload"></i> Upload Resumes
+        </a>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Score filter functionality
+    const scoreFilter = document.getElementById('scoreFilter');
+    const skillFilter = document.getElementById('skillFilter');
+    const candidateCards = document.querySelectorAll('.candidate-card');
+
+    function filterCandidates() {
+        const minScore = parseFloat(scoreFilter.value);
+        const skillKeyword = skillFilter.value.toLowerCase();
+
+        candidateCards.forEach(card => {
+            const score = parseFloat(card.dataset.score);
+            const skills = card.dataset.skills.toLowerCase();
+            
+            const scoreMatch = score >= minScore;
+            const skillMatch = !skillKeyword || skills.includes(skillKeyword);
+            
+            card.style.display = (scoreMatch && skillMatch) ? 'block' : 'none';
+        });
+    }
+
+    scoreFilter.addEventListener('change', filterCandidates);
+    skillFilter.addEventListener('input', filterCandidates);
+
+    // Skill weights functionality
+    const weightsForm = document.getElementById('weightsForm');
+    const saveWeightsBtn = document.getElementById('saveWeights');
+
+    if (weightsForm) {
+        // Update display values for range inputs
+        weightsForm.querySelectorAll('input[type="range"]').forEach(input => {
+            const valueDisplay = document.getElementById('value_' + input.name.replace('weight_', ''));
+            
+            input.addEventListener('input', function() {
+                valueDisplay.textContent = this.value;
+            });
+        });
+
+        // Save weights functionality
+        saveWeightsBtn.addEventListener('click', function() {
+            const formData = new FormData(weightsForm);
+            const weights = {};
+            
+            for (let [key, value] of formData.entries()) {
+                if (key.startsWith('weight_')) {
+                    const skillName = key.replace('weight_', '');
+                    weights[skillName] = parseFloat(value);
+                }
+            }
+
+            // Send to server
+            fetch(`/update_weights/{{ job.id }}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(weights)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload(); // Reload to see updated scores
+                } else {
+                    alert('Error updating weights: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error updating weights');
+            });
+        });
+    }
+});
+</script>
+{% endblock %}
