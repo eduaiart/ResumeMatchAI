@@ -34,7 +34,7 @@ def export_candidates_csv(candidates_data, job_title):
         
         with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
             fieldnames = [
-                'Rank', 'Name', 'Email', 'Phone', 'Overall Score',
+                'Rank', 'Name', 'Email', 'Mobile Number', 'Overall Score',
                 'Skill Score', 'Experience Score', 'Education Score',
                 'Experience Years', 'Key Skills', 'Skill Gaps',
                 'Match Justification', 'Resume File'
@@ -52,9 +52,9 @@ def export_candidates_csv(candidates_data, job_title):
                 
                 writer.writerow({
                     'Rank': rank,
-                    'Name': candidate.name,
+                    'Name': candidate.name or 'Unknown',
                     'Email': candidate.email or 'N/A',
-                    'Phone': candidate.phone or 'N/A',
+                    'Mobile Number': candidate.phone or 'N/A',
                     'Overall Score': f"{match_score.overall_score:.1f}%",
                     'Skill Score': f"{match_score.skill_match_score:.1f}%",
                     'Experience Score': f"{match_score.experience_score:.1f}%",
