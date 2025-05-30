@@ -56,21 +56,21 @@ class MatchingEngine:
             
             # Detailed breakdown
             breakdown = {
-                'skill_score': skill_score,
-                'experience_score': experience_score,
-                'education_score': education_score,
-                'semantic_score': semantic_score,
+                'skill_score': float(skill_score),
+                'experience_score': float(experience_score),
+                'education_score': float(education_score),
+                'semantic_score': float(semantic_score),
                 'weights_used': weights,
                 'matched_skills': list(set(candidate_skills) & set(job_skills)),
                 'missing_skills': skill_gaps
             }
             
             return {
-                'overall_score': round(overall_score, 2),
-                'skill_score': round(skill_score, 2),
-                'experience_score': round(experience_score, 2),
-                'education_score': round(education_score, 2),
-                'semantic_score': round(semantic_score, 2),
+                'overall_score': float(round(overall_score, 2)),
+                'skill_score': float(round(skill_score, 2)),
+                'experience_score': float(round(experience_score, 2)),
+                'education_score': float(round(education_score, 2)),
+                'semantic_score': float(round(semantic_score, 2)),
                 'breakdown': breakdown,
                 'skill_gaps': skill_gaps,
                 'justification': justification
