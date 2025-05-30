@@ -87,58 +87,91 @@ class NLPProcessor:
         }
 
     def _extract_name(self, doc, text):
-        """Extract candidate name from resume"""
-        # Keywords that indicate this is NOT a name
+        """Extract candidate name from resume using multiple strategies"""
+        
+        # Strategy 1: Look for name near email address
+        email = self._extract_email(text)
+        if email:
+            # Extract name from email (before @)
+            email_name = email.split('@')[0]
+            # Convert email format to proper name (e.g., anupam.n.kumar -> Anupam N Kumar)
+            if '.' in email_name:
+                name_parts = email_name.split('.')
+                potential_name = ' '.join(word.capitalize() for word in name_parts if len(word) > 1)
+                if len(potential_name.split()) >= 2:
+                    return potential_name
+        
+        # Strategy 2: Look for text patterns like "Name: John Doe" or lines with just names
+        name_patterns = [
+            r'(?:name|candidate|applicant)[\s:]+([A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)',
+            r'^([A-Z][a-z]+\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)$'
+        ]
+        
+        for pattern in name_patterns:
+            matches = re.findall(pattern, text, re.MULTILINE | re.IGNORECASE)
+            for match in matches:
+                if self._is_valid_name(match):
+                    return match.strip()
+        
+        # Strategy 3: Use spaCy NER but with strict filtering
         job_keywords = [
             'engineer', 'developer', 'manager', 'analyst', 'specialist', 'consultant',
             'director', 'lead', 'senior', 'junior', 'intern', 'associate', 'architect',
             'coordinator', 'supervisor', 'executive', 'assistant', 'officer', 'technician',
-            'administrator', 'designer', 'programmer', 'scientist', 'researcher'
+            'administrator', 'designer', 'programmer', 'scientist', 'researcher', 'handling',
+            'exception', 'cloud', 'software', 'technical', 'development', 'backend'
         ]
         
-        exclude_keywords = [
-            'email', 'phone', 'address', 'resume', 'cv', 'curriculum', 'vitae',
-            'objective', 'summary', 'experience', 'education', 'skills', 'projects',
-            'certifications', 'references', 'contact', 'profile', 'portfolio'
-        ]
-        
-        # First try to find PERSON entities that don't contain job titles
         for ent in doc.ents:
             if ent.label_ == "PERSON" and len(ent.text.split()) >= 2:
-                name_lower = ent.text.lower()
-                if not any(keyword in name_lower for keyword in job_keywords + exclude_keywords):
-                    # Additional check: names typically don't have numbers
-                    if not any(char.isdigit() for char in ent.text):
-                        return ent.text.strip()
+                if self._is_valid_name(ent.text) and not any(keyword in ent.text.lower() for keyword in job_keywords):
+                    return ent.text.strip()
         
-        # Fallback: look for name patterns at the beginning
-        lines = text.split('\n')[:8]  # Check first 8 lines
+        # Strategy 4: Look at first few lines for capitalized names
+        lines = text.split('\n')[:10]
         for line in lines:
             line = line.strip()
-            words = line.split()
-            
-            # Look for 2-3 word combinations that could be names
-            if 2 <= len(words) <= 3:
-                line_lower = line.lower()
-                
-                # Skip if contains job keywords or exclude keywords
-                if any(keyword in line_lower for keyword in job_keywords + exclude_keywords):
-                    continue
-                
-                # Skip if contains digits, special characters (except periods and hyphens)
-                if any(char.isdigit() for char in line):
-                    continue
-                    
-                if any(char in line for char in ['@', '#', '$', '%', '&', '*', '+', '=', '|', '\\', '/', '(', ')', '[', ']', '{', '}', '<', '>']):
-                    continue
-                
-                # Check if words start with capital letters (typical for names)
-                if all(word[0].isupper() for word in words if word):
-                    # Additional validation: common name patterns
-                    if len(line) > 3 and len(line) < 50:  # Reasonable name length
-                        return line.strip()
+            if len(line) > 0 and not any(char in line for char in '@#$%&*+=|\\/<>()[]{}'):
+                words = line.split()
+                if 2 <= len(words) <= 3:
+                    if all(word[0].isupper() and word[1:].islower() for word in words if len(word) > 1):
+                        if self._is_valid_name(line):
+                            return line
         
         return "Unknown"
+    
+    def _is_valid_name(self, text):
+        """Validate if text looks like a real name"""
+        if not text or len(text) < 3 or len(text) > 50:
+            return False
+        
+        # Reject if contains numbers or special characters
+        if any(char.isdigit() for char in text):
+            return False
+        
+        # Reject common non-name words
+        reject_words = [
+            'email', 'phone', 'mobile', 'address', 'resume', 'cv', 'objective',
+            'summary', 'experience', 'education', 'skills', 'projects', 'profile',
+            'engineer', 'developer', 'manager', 'analyst', 'specialist', 'director',
+            'handling', 'exception', 'cloud', 'technical', 'development', 'backend'
+        ]
+        
+        text_lower = text.lower()
+        if any(word in text_lower for word in reject_words):
+            return False
+        
+        # Names should have 2-3 words, each starting with capital
+        words = text.split()
+        if not (2 <= len(words) <= 3):
+            return False
+        
+        # Check if it looks like a proper name format
+        for word in words:
+            if len(word) < 2 or not word[0].isupper():
+                return False
+        
+        return True
 
     def _extract_email(self, text):
         """Extract email address from text"""
@@ -148,34 +181,50 @@ class NLPProcessor:
 
     def _extract_phone(self, text):
         """Extract phone number from text - prioritize 10-digit numbers"""
-        # Multiple patterns to catch different phone number formats
-        patterns = [
-            r'\b(?:\+91[-.\s]?)?([6-9]\d{9})\b',  # Indian mobile numbers (10 digits starting with 6-9)
-            r'\b(\d{10})\b',  # Any 10-digit number
-            r'\b(\+?\d{1,3}[-.\s]?)?\(?([6-9]\d{2})\)?[-.\s]?(\d{3})[-.\s]?(\d{4})\b',  # US format with area code
-            r'\b(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b'  # General format
+        
+        # Strategy 1: Look for explicit mobile number patterns
+        mobile_patterns = [
+            r'(?:mobile|phone|cell|contact)[\s:]+(\+?[\d\s\-\(\)\.]{10,15})',
+            r'(?:mobile|phone)[\s\w]*?:[\s]*(\+?[\d\s\-\(\)\.]{10,15})',
+            r'(?:mobile|phone)\s*number[\s:]+(\+?[\d\s\-\(\)\.]{10,15})'
         ]
         
-        # Try each pattern and prioritize 10-digit numbers
-        for pattern in patterns:
-            matches = re.findall(pattern, text)
-            if matches:
-                for match in matches:
-                    if isinstance(match, tuple):
-                        # For patterns that return tuples, join the digits
-                        phone = ''.join(filter(str.isdigit, ''.join(match)))
-                    else:
-                        phone = ''.join(filter(str.isdigit, match))
-                    
-                    # Prefer 10-digit numbers
+        for pattern in mobile_patterns:
+            matches = re.findall(pattern, text, re.IGNORECASE)
+            for match in matches:
+                phone = re.sub(r'[^\d]', '', match)  # Extract only digits
+                if 10 <= len(phone) <= 12:
                     if len(phone) == 10:
                         return phone
-                    elif len(phone) >= 10:
-                        # If longer, try to extract 10 digits
-                        if phone.startswith('91') and len(phone) == 12:  # India country code
-                            return phone[2:]
-                        elif phone.startswith('1') and len(phone) == 11:  # US country code
-                            return phone[1:]
+                    elif len(phone) == 12 and phone.startswith('91'):
+                        return phone[2:]  # Remove India country code
+                    elif len(phone) == 11 and phone.startswith('1'):
+                        return phone[1:]  # Remove US country code
+        
+        # Strategy 2: General phone number patterns
+        general_patterns = [
+            r'\b(\d{3}[-.\s]?\d{3}[-.\s]?\d{4})\b',  # XXX-XXX-XXXX format
+            r'\b(\+?91[-.\s]?[6-9]\d{9})\b',  # Indian mobile with country code
+            r'\b([6-9]\d{9})\b',  # Indian mobile without country code
+            r'\b(\d{10})\b',  # Any 10-digit number
+            r'\((\d{3})\)[-.\s]?(\d{3})[-.\s]?(\d{4})',  # (XXX) XXX-XXXX format
+        ]
+        
+        for pattern in general_patterns:
+            matches = re.findall(pattern, text)
+            for match in matches:
+                if isinstance(match, tuple):
+                    phone = ''.join(filter(str.isdigit, ''.join(match)))
+                else:
+                    phone = ''.join(filter(str.isdigit, match))
+                
+                # Validate phone number length and format
+                if len(phone) == 10:
+                    return phone
+                elif len(phone) == 12 and phone.startswith('91'):
+                    return phone[2:]
+                elif len(phone) == 11 and phone.startswith('1'):
+                    return phone[1:]
         
         return None
 
