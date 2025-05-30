@@ -190,6 +190,12 @@ def candidates(job_id):
         Candidate.job_id == job_id
     ).order_by(MatchScore.overall_score.desc()).all()
     
+    # Debug logging
+    logging.info(f"Found {len(candidates_with_scores)} candidates for job {job_id}")
+    if candidates_with_scores:
+        first_candidate = candidates_with_scores[0][0]
+        logging.info(f"First candidate: name={first_candidate.name}, skills={first_candidate.extracted_skills}")
+    
     return render_template('candidates.html', 
                          job=job, 
                          candidates_with_scores=candidates_with_scores)
