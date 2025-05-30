@@ -8,9 +8,14 @@
         <h2><i class="bi bi-speedometer2"></i> Dashboard</h2>
         <p class="text-muted">Overview of all jobs and candidate matching results</p>
     </div>
-    <a href="{{ url_for('upload') }}" class="btn btn-primary">
-        <i class="bi bi-plus-circle"></i> Add New Job
-    </a>
+    <div>
+        <a href="{{ url_for('upload') }}" class="btn btn-primary me-2">
+            <i class="bi bi-plus-circle"></i> Add New Job
+        </a>
+        <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#clearDataModal">
+            <i class="bi bi-trash"></i> Clear All Data
+        </button>
+    </div>
 </div>
 
 {% if job_stats %}
@@ -174,6 +179,47 @@
         </a>
     </div>
 {% endif %}
+
+<!-- Clear All Data Confirmation Modal -->
+<div class="modal fade" id="clearDataModal" tabindex="-1" aria-labelledby="clearDataModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="clearDataModalLabel">
+                    <i class="bi bi-exclamation-triangle text-warning"></i> 
+                    Clear All Data
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <strong>Warning:</strong> This action cannot be undone!
+                </div>
+                <p>Are you sure you want to delete all dashboard data? This will permanently remove:</p>
+                <ul>
+                    <li>All job descriptions</li>
+                    <li>All candidate resumes</li>
+                    <li>All match scores and analysis</li>
+                    <li>All uploaded files</li>
+                </ul>
+                <p class="text-muted">
+                    <strong>Current data count:</strong>
+                    {{ job_stats|length if job_stats else 0 }} jobs, 
+                    {{ job_stats|sum(attribute='candidate_count') if job_stats else 0 }} candidates
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="POST" action="{{ url_for('clear_all_data') }}" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Yes, Clear All Data
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}

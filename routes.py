@@ -268,6 +268,30 @@ def export_candidates(job_id):
         flash('Error exporting candidates. Please try again.', 'error')
         return redirect(url_for('candidates', job_id=job_id))
 
+@app.route('/clear_all_data', methods=['POST'])
+def clear_all_data():
+    """Clear all data from the database"""
+    try:
+        # Delete all match scores first (due to foreign key constraints)
+        MatchScore.query.delete()
+        
+        # Delete all candidates
+        Candidate.query.delete()
+        
+        # Delete all job descriptions
+        JobDescription.query.delete()
+        
+        # Commit the changes
+        db.session.commit()
+        
+        flash('All dashboard data has been successfully cleared.', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error clearing data: {str(e)}', 'danger')
+    
+    return redirect(url_for('dashboard'))
+
 @app.errorhandler(404)
 def not_found(error):
     return render_template('404.html'), 404
