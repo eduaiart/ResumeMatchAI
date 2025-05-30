@@ -88,18 +88,55 @@ class NLPProcessor:
 
     def _extract_name(self, doc, text):
         """Extract candidate name from resume"""
-        # First try to find PERSON entities
+        # Keywords that indicate this is NOT a name
+        job_keywords = [
+            'engineer', 'developer', 'manager', 'analyst', 'specialist', 'consultant',
+            'director', 'lead', 'senior', 'junior', 'intern', 'associate', 'architect',
+            'coordinator', 'supervisor', 'executive', 'assistant', 'officer', 'technician',
+            'administrator', 'designer', 'programmer', 'scientist', 'researcher'
+        ]
+        
+        exclude_keywords = [
+            'email', 'phone', 'address', 'resume', 'cv', 'curriculum', 'vitae',
+            'objective', 'summary', 'experience', 'education', 'skills', 'projects',
+            'certifications', 'references', 'contact', 'profile', 'portfolio'
+        ]
+        
+        # First try to find PERSON entities that don't contain job titles
         for ent in doc.ents:
             if ent.label_ == "PERSON" and len(ent.text.split()) >= 2:
-                return ent.text.strip()
+                name_lower = ent.text.lower()
+                if not any(keyword in name_lower for keyword in job_keywords + exclude_keywords):
+                    # Additional check: names typically don't have numbers
+                    if not any(char.isdigit() for char in ent.text):
+                        return ent.text.strip()
         
         # Fallback: look for name patterns at the beginning
-        lines = text.split('\n')[:5]  # Check first 5 lines
+        lines = text.split('\n')[:8]  # Check first 8 lines
         for line in lines:
             line = line.strip()
-            if len(line.split()) == 2 and not any(char.isdigit() for char in line):
-                if not any(keyword in line.lower() for keyword in ['email', 'phone', 'address', 'resume']):
-                    return line
+            words = line.split()
+            
+            # Look for 2-3 word combinations that could be names
+            if 2 <= len(words) <= 3:
+                line_lower = line.lower()
+                
+                # Skip if contains job keywords or exclude keywords
+                if any(keyword in line_lower for keyword in job_keywords + exclude_keywords):
+                    continue
+                
+                # Skip if contains digits, special characters (except periods and hyphens)
+                if any(char.isdigit() for char in line):
+                    continue
+                    
+                if any(char in line for char in ['@', '#', '$', '%', '&', '*', '+', '=', '|', '\\', '/', '(', ')', '[', ']', '{', '}', '<', '>']):
+                    continue
+                
+                # Check if words start with capital letters (typical for names)
+                if all(word[0].isupper() for word in words if word):
+                    # Additional validation: common name patterns
+                    if len(line) > 3 and len(line) < 50:  # Reasonable name length
+                        return line.strip()
         
         return "Unknown"
 
@@ -110,10 +147,37 @@ class NLPProcessor:
         return matches[0] if matches else None
 
     def _extract_phone(self, text):
-        """Extract phone number from text"""
-        phone_pattern = r'(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}'
-        matches = re.findall(phone_pattern, text)
-        return matches[0] if matches else None
+        """Extract phone number from text - prioritize 10-digit numbers"""
+        # Multiple patterns to catch different phone number formats
+        patterns = [
+            r'\b(?:\+91[-.\s]?)?([6-9]\d{9})\b',  # Indian mobile numbers (10 digits starting with 6-9)
+            r'\b(\d{10})\b',  # Any 10-digit number
+            r'\b(\+?\d{1,3}[-.\s]?)?\(?([6-9]\d{2})\)?[-.\s]?(\d{3})[-.\s]?(\d{4})\b',  # US format with area code
+            r'\b(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b'  # General format
+        ]
+        
+        # Try each pattern and prioritize 10-digit numbers
+        for pattern in patterns:
+            matches = re.findall(pattern, text)
+            if matches:
+                for match in matches:
+                    if isinstance(match, tuple):
+                        # For patterns that return tuples, join the digits
+                        phone = ''.join(filter(str.isdigit, ''.join(match)))
+                    else:
+                        phone = ''.join(filter(str.isdigit, match))
+                    
+                    # Prefer 10-digit numbers
+                    if len(phone) == 10:
+                        return phone
+                    elif len(phone) >= 10:
+                        # If longer, try to extract 10 digits
+                        if phone.startswith('91') and len(phone) == 12:  # India country code
+                            return phone[2:]
+                        elif phone.startswith('1') and len(phone) == 11:  # US country code
+                            return phone[1:]
+        
+        return None
 
     def _extract_skills(self, text):
         """Extract skills from text using pattern matching and NLP"""
