@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block title %}Candidates - {{ job.title }} - Resume Match AI{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2>
+            <i class="bi bi-people"></i> 
+            Candidates for: {{ job.title }}
+        </h2>
+        <p class="text-muted">Ranked by overall match score</p>
+    </div>
+    <div>
+        {% if candidates_with_scores %}
+            <a href="{{ url_for('export_candidates', job_id=job.id) }}" class="btn btn-success">
+                <i class="bi bi-download"></i> Export Results
+            </a>
+        {% endif %}
+        <a href="{{ url_for('job_detail', job_id=job.id) }}" class="btn btn-outline-primary ms-2">
+            <i class="bi bi-briefcase"></i> View Job Details
+        </a>
+    </div>
+</div>
+
+{% if candidates_with_scores %}
+    <!-- Candidates List -->
+    <div class="row g-3">
+        {% for candidate, match_score in candidates_with_scores %}
+            <div class="col-12">
+                <div class="card border-start border-3 {{ 'border-success' if match_score.overall_score >= 80 else 'border-warning' if match_score.overall_score >= 60 else 'border-danger' }}">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <!-- Candidate Info -->
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="badge bg-primary me-2">#{{ loop.index }}</span>
+                                    <h5 class="mb-0">{{ candidate.name or 'Candidate ' + loop.index|string }}</h5>
+                                </div>
+                                
+                                <div class="text-muted small mb-2">
+                                    {% if candidate.email %}
+                                        <span class="me-3"><i class="bi bi-envelope me-1"></i>{{ candidate.email }}</span>
+                                    {% endif %}
+                                    {% if candidate.phone %}
+                                        <span><i class="bi bi-telephone me-1"></i>{{ candidate.phone }}</span>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- Skills Preview -->
+                                {% if candidate.extracted_skills %}
+                                    <div class="mb-2">
+                                        <small class="text-muted">Key Skills:</small><br>
+                                        {% for skill in candidate.extracted_skills[:5] %}
+                                            <span class="badge bg-secondary me-1">{{ skill }}</span>
+                                        {% endfor %}
+                                        {% if candidate.extracted_skills|length > 5 %}
+                                            <span class="badge bg-light text-dark">+{{ candidate.extracted_skills|length - 5 }} more</span>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Scores -->
+                            <div class="col-md-6">
+                                <div class="row text-center">
+                                    <div class="col-3">
+                                        <div class="h4 mb-1">
+                                            <span class="badge {{ 'bg-success' if match_score.overall_score >= 80 else 'bg-warning text-dark' if match_score.overall_score >= 60 else 'bg-danger' }}">
+                                                {{ "%.0f"|format(match_score.overall_score) }}%
+                                            </span>
+                                        </div>
+                                        <small class="text-muted">Overall</small>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="fw-bold">{{ "%.0f"|format(match_score.skill_match_score or 0) }}%</div>
+                                        <small class="text-muted">Skills</small>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="fw-bold">{{ "%.0f"|format(match_score.experience_score or 0) }}%</div>
+                                        <small class="text-muted">Experience</small>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="fw-bold">{{ candidate.experience_years or 0 }}</div>
+                                        <small class="text-muted">Years</small>
+                                    </div>
+                                </div>
+                                
+                                <!-- Actions -->
+                                <div class="mt-3 text-end">
+                                    <button class="btn btn-sm btn-outline-primary me-1" 
+                                            data-bs-toggle="collapse" 
+                                            data-bs-target="#details{{ loop.index }}">
+                                        <i class="bi bi-eye"></i> Details
+                                    </button>
+                                    <button class="btn btn-sm btn-success me-1">
+                                        <i class="bi bi-check-circle"></i> Shortlist
+                                    </button>
+                                    <a href="#" class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-download"></i> Resume
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Collapsible Details -->
+                        <div class="collapse mt-3" id="details{{ loop.index }}">
+                            <hr>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="text-muted">Skills Gap Analysis:</h6>
+                                    {% if match_score.skill_gaps %}
+                                        <div class="mb-2">
+                                            <small class="text-muted">Missing Skills:</small><br>
+                                            {% for gap in match_score.skill_gaps[:5] %}
+                                                <span class="badge bg-danger me-1">{{ gap }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    {% else %}
+                                        <p class="text-success small">No major skill gaps identified</p>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="text-muted">Match Analysis:</h6>
+                                    <p class="small">{{ match_score.match_justification or 'No detailed analysis available' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+{% else %}
+    <!-- Empty State -->
+    <div class="text-center py-5">
+        <div class="mb-4">
+            <i class="bi bi-people display-1 text-muted"></i>
+        </div>
+        <h3>No Candidates Found</h3>
+        <p class="text-muted mb-4">
+            Upload candidate resumes to see intelligent matching results for this job.
+        </p>
+        <a href="{{ url_for('upload') }}" class="btn btn-primary btn-lg">
+            <i class="bi bi-upload"></i> Upload Resumes
+        </a>
+    </div>
+{% endif %}
+
+{% endblock %}
