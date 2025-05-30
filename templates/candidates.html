@@ -8,8 +8,12 @@
 
 {% if candidates_with_scores %}
     <div class="mb-3">
-        <a href="{{ url_for('export_candidates', job_id=job.id) }}" class="btn btn-success">Export Results</a>
-        <a href="{{ url_for('job_detail', job_id=job.id) }}" class="btn btn-outline-primary">View Job Details</a>
+        <div class="btn-group" role="group">
+            <a href="{{ url_for('export_candidates', job_id=job.id) }}" class="btn btn-success">Export All</a>
+            <a href="{{ url_for('export_candidates', job_id=job.id, threshold=70) }}" class="btn btn-outline-success">Export 70%+</a>
+            <a href="{{ url_for('export_candidates', job_id=job.id, threshold=80) }}" class="btn btn-outline-success">Export 80%+</a>
+        </div>
+        <a href="{{ url_for('job_detail', job_id=job.id) }}" class="btn btn-outline-primary ms-2">View Job Details</a>
     </div>
 
     {% for candidate, match_score in candidates_with_scores %}

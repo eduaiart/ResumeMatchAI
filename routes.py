@@ -243,8 +243,8 @@ def export_candidates(job_id):
     try:
         job = JobDescription.query.get_or_404(job_id)
         
-        # Get candidates with scores above threshold (e.g., 70%)
-        threshold = request.args.get('threshold', 70, type=float)
+        # Get candidates with scores above threshold (default: all candidates)
+        threshold = request.args.get('threshold', 0, type=float)
         
         candidates_data = db.session.query(Candidate, MatchScore).join(
             MatchScore, Candidate.id == MatchScore.candidate_id
