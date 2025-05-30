@@ -3,6 +3,13 @@
 {% block title %}Candidates - {{ job.title }} - Resume Match AI{% endblock %}
 
 {% block content %}
+<!-- Debug info - remove after testing -->
+<div class="alert alert-info small mb-2">
+    Debug: Found {{ candidates_with_scores|length }} candidates for rendering
+    {% if candidates_with_scores %}
+        - First candidate: {{ candidates_with_scores[0][0].name if candidates_with_scores[0][0].name else 'No name' }}
+    {% endif %}
+</div>
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h2>
