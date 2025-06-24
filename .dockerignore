@@ -1,0 +1,73 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env
+pip-log.txt
+pip-delete-this-directory.txt
+.tox
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git
+.mypy_cache
+.pytest_cache
+.hypothesis
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+uploads/*
+!uploads/.gitkeep
+instance/
+*.db
+*.sqlite3
+
+# Documentation
+README.md
+replit.md
+*.md
+
+# Development files
+.replit
+pyproject.toml
+uv.lock
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# Cloud deployment files
+app.yaml
+cloudbuild.yaml
+.gcloudignore
+*.sh
+
+# Environment files
+.env*
+!.env.example
