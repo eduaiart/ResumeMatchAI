@@ -1,0 +1,49 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: resume-match-ai
+  annotations:
+    run.googleapis.com/ingress: all
+    run.googleapis.com/execution-environment: gen2
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/cpu-throttling: "false"
+        run.googleapis.com/memory: "2Gi"
+        run.googleapis.com/cpu: "1000m"
+        run.googleapis.com/max-scale: "10"
+        run.googleapis.com/min-scale: "1"
+    spec:
+      containerConcurrency: 80
+      timeoutSeconds: 300
+      containers:
+      - image: gcr.io/PROJECT_ID/resume-match-ai:latest
+        ports:
+        - containerPort: 5000
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://username:password@HOST:5432/resumematchai"
+        - name: SESSION_SECRET
+          value: "your-session-secret"
+        - name: FLASK_ENV
+          value: "production"
+        resources:
+          limits:
+            cpu: "1000m"
+            memory: "2Gi"
+        startupProbe:
+          httpGet:
+            path: /
+            port: 5000
+          initialDelaySeconds: 30
+          timeoutSeconds: 30
+          periodSeconds: 10
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 5000
+          initialDelaySeconds: 30
+          timeoutSeconds: 30
+          periodSeconds: 60
