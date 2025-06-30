@@ -34,16 +34,16 @@ ENV FLASK_APP=main.py
 ENV FLASK_ENV=production
 ENV PYTHONPATH=/app
 
-# Expose port
-EXPOSE 5000
+# Expose port - use PORT env var for Cloud Run compatibility
+EXPOSE 8080
 
 # Create non-root user for security
 RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app
 USER appuser
 
-# Health check
+# Health check - use PORT env var
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:5000/ || exit 1
+    CMD curl -f http://localhost:${PORT:-8080}/ || exit 1
 
-# Run the application
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "--timeout", "120", "main:app"]
+# Run the application - bind to PORT env var for Cloud Run compatibility
+CMD exec gunicorn --bind 0.0.0.0:${PORT:-8080} --workers 2 --timeout 120 main:app

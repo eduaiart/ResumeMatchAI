@@ -20,8 +20,10 @@ spec:
       containers:
       - image: gcr.io/PROJECT_ID/resume-match-ai:latest
         ports:
-        - containerPort: 5000
+        - containerPort: 8080
         env:
+        - name: PORT
+          value: "8080"
         - name: DATABASE_URL
           value: "postgresql://username:password@HOST:5432/resumematchai"
         - name: SESSION_SECRET
@@ -35,7 +37,7 @@ spec:
         startupProbe:
           httpGet:
             path: /
-            port: 5000
+            port: 8080
           initialDelaySeconds: 30
           timeoutSeconds: 30
           periodSeconds: 10
@@ -43,7 +45,7 @@ spec:
         livenessProbe:
           httpGet:
             path: /
-            port: 5000
+            port: 8080
           initialDelaySeconds: 30
           timeoutSeconds: 30
           periodSeconds: 60
