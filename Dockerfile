@@ -18,8 +18,9 @@ COPY requirements-gcp.txt requirements.txt
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Download spaCy model
-RUN python -m spacy download en_core_web_sm
+# Download spaCy model and clean up pip cache to reduce image size
+RUN python -m spacy download en_core_web_sm && \
+    pip cache purge
 
 # Copy application files
 COPY . .
