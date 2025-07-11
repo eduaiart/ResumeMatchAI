@@ -43,10 +43,15 @@ class GoogleCalendarService:
     
     def get_redirect_uri(self):
         """Get the OAuth redirect URI based on environment"""
-        # For Replit deployment, use the proper domain
-        if os.environ.get('REPLIT_DOMAIN'):
+        # For Google Cloud Run deployment
+        if os.environ.get('K_SERVICE'):
+            # Running on Google Cloud Run
+            base_url = "https://fit2start-1077229103364.europe-west1.run.app"
+        elif os.environ.get('REPLIT_DOMAIN'):
+            # Running on Replit
             base_url = f"https://{os.environ.get('REPLIT_DOMAIN')}"
         else:
+            # Local development
             base_url = 'http://localhost:5000'
         
         return f"{base_url}/oauth2callback"

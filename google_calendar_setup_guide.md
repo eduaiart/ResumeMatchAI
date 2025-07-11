@@ -58,11 +58,11 @@ Your Google OAuth client was deleted, which is why you're seeing the "Access blo
 **Issue**: "Invalid redirect URI"
 **Solution**: Check that your Replit domain is correctly added to authorized redirect URIs
 
-## Your Current Replit Domain
+## Your Current Google Cloud Run Domain
 
-Based on your setup, your redirect URI should be:
+Based on your deployment, your redirect URI should be:
 ```
-https://your-repl-name.your-username.repl.co/oauth2callback
+https://fit2start-1077229103364.europe-west1.run.app/oauth2callback
 ```
 
 Make sure this exact URL is added to your Google Cloud Console OAuth credentials.
