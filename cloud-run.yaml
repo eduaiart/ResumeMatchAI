@@ -1,51 +1,84 @@
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
-  name: resume-match-ai
+  name: fit2hire
   annotations:
     run.googleapis.com/ingress: all
-    run.googleapis.com/execution-environment: gen2
+    run.googleapis.com/cpu-throttling: 'false'
 spec:
   template:
     metadata:
       annotations:
-        run.googleapis.com/cpu-throttling: "false"
-        run.googleapis.com/memory: "4Gi"
-        run.googleapis.com/cpu: "1000m"
-        run.googleapis.com/max-scale: "5"
-        run.googleapis.com/min-scale: "0"
+        autoscaling.knative.dev/minScale: '1'
+        autoscaling.knative.dev/maxScale: '10'
+        run.googleapis.com/execution-environment: gen2
+        run.googleapis.com/cpu-throttling: 'false'
     spec:
       containerConcurrency: 80
-      timeoutSeconds: 300
+      timeoutSeconds: 3600
+      serviceAccountName: 'fit2hire-service-account'
       containers:
-      - image: gcr.io/PROJECT_ID/resume-match-ai:latest
+      - name: fit2hire
+        image: gcr.io/PROJECT_ID/fit2hire:latest
         ports:
-        - containerPort: 8080
-        env:
-        - name: PORT
-          value: "8080"
-        - name: DATABASE_URL
-          value: "postgresql://username:password@HOST:5432/resumematchai"
-        - name: SESSION_SECRET
-          value: "your-session-secret"
-        - name: FLASK_ENV
-          value: "production"
+        - name: http1
+          containerPort: 8080
         resources:
           limits:
-            cpu: "1000m"
-            memory: "4Gi"
-        startupProbe:
-          httpGet:
-            path: /
-            port: 8080
-          initialDelaySeconds: 30
-          timeoutSeconds: 30
-          periodSeconds: 10
-          failureThreshold: 3
+            cpu: 2000m
+            memory: 4Gi
+          requests:
+            cpu: 1000m
+            memory: 2Gi
+        env:
+        - name: FLASK_ENV
+          value: production
+        - name: PORT
+          value: '8080'
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: database-secret
+              key: url
+        - name: SESSION_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: session-secret
+              key: value
+        - name: GOOGLE_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: google-oauth-secret
+              key: client_id
+        - name: GOOGLE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: google-oauth-secret
+              key: client_secret
         livenessProbe:
           httpGet:
             path: /
             port: 8080
           initialDelaySeconds: 30
-          timeoutSeconds: 30
-          periodSeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        startupProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 10
+          failureThreshold: 6
+  traffic:
+  - percent: 100
+    latestRevision: true

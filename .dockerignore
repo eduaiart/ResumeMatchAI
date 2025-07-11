@@ -1,35 +1,100 @@
-# Git
+# Git files
 .git
 .gitignore
+README.md
+.gitattributes
 
-# Python
-__pycache__
-*.pyc
-*.pyo
-*.pyd
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
 .Python
-env
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
-.tox
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
 .coverage
 .coverage.*
 .cache
 nosetests.xml
 coverage.xml
 *.cover
-*.log
-.git
-.mypy_cache
-.pytest_cache
-.hypothesis
+.hypothesis/
+.pytest_cache/
 
-# Virtual environments
-venv/
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# celery beat schedule file
+celerybeat-schedule
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
 env/
+venv/
 ENV/
+env.bak/
+venv.bak/
 
-# IDEs
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# IDE
 .vscode/
 .idea/
 *.swp
@@ -38,36 +103,23 @@ ENV/
 
 # OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
 # Project specific
-uploads/*
-!uploads/.gitkeep
+uploads/
 instance/
-*.db
-*.sqlite3
-
-# Documentation
-README.md
-replit.md
-*.md
-
-# Development files
+*.log
+node_modules/
 .replit
-pyproject.toml
-uv.lock
+replit.nix
+.env.example
+.env.yaml.template
 
-# Docker
-Dockerfile
-.dockerignore
-docker-compose.yml
-
-# Cloud deployment files
-app.yaml
-cloudbuild.yaml
-.gcloudignore
-*.sh
-
-# Environment files
-.env*
-!.env.example
+# Documentation files
+*.md
+docs/
