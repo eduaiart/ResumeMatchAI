@@ -1,115 +1,118 @@
-# Fix Google Cloud Run Deployment - Port Issue Resolved
+# Fix Google Cloud Run Deployment Issues
 
-## 🔧 Problem Fixed
+Based on the error logs, here are the issues and solutions:
 
-The deployment failed because Google Cloud Run expects apps to listen on port **8080**, but your Flask app was configured for port **5000**.
+## 🔍 Issues Identified
 
-## ✅ Changes Made
+1. **Worker Process Issues**: Gunicorn workers are failing to boot properly
+2. **Memory Allocation**: Possible memory constraint issues
+3. **File Dependencies**: Missing or incorrect package dependencies
+4. **Configuration**: Cloud Run service configuration needs optimization
 
-### 1. Updated Dockerfile
-- Changed port from 5000 to 8080
-- Added PORT environment variable support
-- Updated health checks to use dynamic port
+## 🛠️ Solutions
 
-### 2. Updated cloud-run.yaml
-- Set containerPort to 8080
-- Added PORT environment variable
-- Updated health check probes
+### 1. Fix Dockerfile Configuration
+The Dockerfile has been optimized with:
+- Proper requirements file handling
+- Memory-efficient single worker with threads
+- Non-root user security
+- Health checks
 
-## 🚀 Quick Redeploy Steps
-
-### Option 1: Using gcloud CLI
+### 2. Update Google Cloud Run Configuration
 ```bash
-# Rebuild and deploy with fixes
-gcloud builds submit --tag gcr.io/YOUR_PROJECT_ID/resume-match-ai
-gcloud run deploy resumematchai \
-  --image gcr.io/YOUR_PROJECT_ID/resume-match-ai \
-  --platform managed \
-  --region us-central1 \
-  --allow-unauthenticated \
-  --port 8080 \
-  --set-env-vars PORT=8080
+# Deploy with proper resource allocation
+gcloud run deploy fit2hire \
+    --image gcr.io/your-project-id/fit2hire \
+    --region europe-west1 \
+    --platform managed \
+    --allow-unauthenticated \
+    --memory 4Gi \
+    --cpu 2 \
+    --timeout 3600 \
+    --concurrency 80 \
+    --max-instances 10 \
+    --min-instances 1 \
+    --port 8080 \
+    --set-env-vars "FLASK_ENV=production,PORT=8080"
 ```
 
-### Option 2: Using Cloud Console
-1. **Go to Cloud Run**: https://console.cloud.google.com/run
-2. **Select your service**: resumematchai
-3. **Edit & Deploy New Revision**
-4. **Set Environment Variables**:
-   ```
-   PORT=8080
-   DATABASE_URL=your-database-url
-   SESSION_SECRET=your-secret-key
-   ```
-5. **Deploy**
-
-## 🔍 What Changed in Files
-
-### Dockerfile Changes:
-```dockerfile
-# Before (old)
-EXPOSE 5000
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", ...]
-
-# After (fixed)
-EXPOSE 8080
-CMD exec gunicorn --bind 0.0.0.0:${PORT:-8080} ...
-```
-
-### cloud-run.yaml Changes:
-```yaml
-# Before (old)
-ports:
-- containerPort: 5000
-
-# After (fixed)
-ports:
-- containerPort: 8080
-env:
-- name: PORT
-  value: "8080"
-```
-
-## 💡 Why This Happens
-
-**Google Cloud Run Requirements:**
-- Must listen on port specified by `PORT` environment variable
-- Default PORT is 8080 if not specified
-- Container must start within timeout period (default 240 seconds)
-- Must respond to HTTP requests on the specified port
-
-**Your Original Setup:**
-- Flask app hardcoded to port 5000
-- Cloud Run was setting PORT=8080
-- App ignored Cloud Run's PORT variable
-- Health checks failed → deployment failed
-
-## ✅ Now Your App Will:
-1. **Read PORT environment variable** (8080 on Cloud Run)
-2. **Listen on correct port** automatically
-3. **Pass health checks** 
-4. **Deploy successfully**
-
-## 🔄 Alternative: Use Railway Instead
-
-If you prefer to avoid Google Cloud Run complexity:
-
+### 3. Environment Variables Required
+Set these in Google Cloud Run:
 ```bash
-# Railway automatically handles ports
-# No configuration needed - just push to GitHub
-# Connect repository → automatic deployment
-```
-
-Railway is more beginner-friendly and handles these port configurations automatically.
-
-## 🚨 Environment Variables Needed
-
-Make sure these are set in Cloud Run:
-```bash
-PORT=8080
-DATABASE_URL=postgresql://user:pass@host:5432/db
-SESSION_SECRET=your-long-random-secret
+DATABASE_URL=your-postgresql-connection-string
+SESSION_SECRET=your-session-secret-key
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
 FLASK_ENV=production
+PORT=8080
 ```
 
-Your deployment should now work correctly with these fixes!
+### 4. Build and Deploy Commands
+```bash
+# Build the Docker image
+docker build -t gcr.io/your-project-id/fit2hire .
+
+# Push to Google Container Registry
+docker push gcr.io/your-project-id/fit2hire
+
+# Deploy to Cloud Run
+gcloud run deploy fit2hire \
+    --image gcr.io/your-project-id/fit2hire \
+    --region europe-west1 \
+    --platform managed \
+    --allow-unauthenticated \
+    --memory 4Gi \
+    --cpu 2 \
+    --timeout 3600 \
+    --port 8080
+```
+
+### 5. Check Service Status
+```bash
+# Check service status
+gcloud run services describe fit2hire --region europe-west1
+
+# View logs
+gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=fit2hire" --limit=50
+```
+
+## 🚨 Common Cloud Run Issues
+
+### Memory Issues
+- **Symptom**: Worker processes failing to start
+- **Solution**: Increase memory to 4GB minimum
+- **Command**: `--memory 4Gi`
+
+### Port Configuration
+- **Symptom**: Service not responding to requests
+- **Solution**: Ensure PORT environment variable is set
+- **Command**: `--set-env-vars "PORT=8080"`
+
+### Database Connection
+- **Symptom**: Database connection errors
+- **Solution**: Verify DATABASE_URL format
+- **Format**: `postgresql://user:password@host:port/database`
+
+### OAuth Configuration
+- **Symptom**: Google Calendar authentication failing
+- **Solution**: Update redirect URI in Google Cloud Console
+- **URI**: `https://your-service-url/oauth2callback`
+
+## 🔧 Troubleshooting Steps
+
+1. **Check Logs**: Use Google Cloud Console Logs Explorer
+2. **Verify Build**: Ensure Docker image builds without errors
+3. **Test Locally**: Run container locally first
+4. **Environment Variables**: Verify all required env vars are set
+5. **Resource Limits**: Check memory and CPU allocation
+
+## 📊 Monitoring
+
+Set up monitoring to track:
+- **Request latency**
+- **Error rates**
+- **Memory usage**
+- **CPU utilization**
+- **Instance scaling**
+
+The deployment should now work properly with these fixes applied.

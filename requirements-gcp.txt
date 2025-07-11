@@ -12,4 +12,6 @@ pdfplumber==0.10.0
 email-validator==2.1.0
 Werkzeug==3.0.1
 SQLAlchemy==2.0.23
-https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
+google-api-python-client==2.108.0
+google-auth-httplib2==0.1.1
+google-auth-oauthlib==1.1.0
