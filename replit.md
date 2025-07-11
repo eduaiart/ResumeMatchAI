@@ -1,8 +1,8 @@
-# Resume Match AI
+# Fit2Hire
 
 ## Overview
 
-Resume Match AI is a Flask-based web application that intelligently matches candidate resumes to job descriptions using advanced Natural Language Processing (NLP) techniques. The system automatically parses resumes in multiple formats (PDF, DOCX, TXT), extracts relevant information, and provides comprehensive scoring and ranking of candidates based on job requirements.
+Fit2Hire is a Flask-based web application that intelligently matches candidate resumes to job descriptions using advanced Natural Language Processing (NLP) techniques. The system automatically parses resumes in multiple formats (PDF, DOCX, TXT), extracts relevant information, and provides comprehensive scoring and ranking of candidates based on job requirements.
 
 ## System Architecture
 
@@ -112,6 +112,7 @@ The system uses a multi-criteria scoring approach:
 
 ## Changelog
 
+- July 11, 2025. Rebranded from "Resume Match AI" to "Fit2Hire" with Capgemini styling
 - June 30, 2025. Initial setup
 
 ## User Preferences
