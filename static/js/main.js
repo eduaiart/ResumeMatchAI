@@ -1,10 +1,10 @@
 /**
- * Resume Match AI - Main JavaScript File
+ * Fit2Hire - Main JavaScript File
  * Provides interactive functionality for the web interface
  */
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Resume Match AI initialized');
+    console.log('Fit2Hire initialized');
     
     // Initialize all components
     initializeFormValidation();
@@ -649,7 +649,7 @@ window.addEventListener('unhandledrejection', function(e) {
 });
 
 // Export functions for global use
-window.ResumeMatchAI = {
+window.Fit2Hire = {
     showAlert,
     copyToClipboard,
     formatNumber,
