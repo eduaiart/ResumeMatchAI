@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block title %}Appointments{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-calendar3"></i> Interview Appointments</h2>
+        <div>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    {% if appointments %}
+        <div class="row">
+            {% for appointment in appointments %}
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">{{ appointment.appointment_type }}</h5>
+                            <span class="badge bg-{% if appointment.status == 'scheduled' %}success{% elif appointment.status == 'cancelled' %}danger{% elif appointment.status == 'completed' %}info{% else %}warning{% endif %}">
+                                {{ appointment.status.title() }}
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="card-title">{{ appointment.candidate.name }} - {{ appointment.job.title }}</h6>
+                            
+                            <div class="mb-3">
+                                <strong><i class="bi bi-calendar-event"></i> Date & Time:</strong><br>
+                                {{ appointment.scheduled_start.strftime('%B %d, %Y at %I:%M %p') }}<br>
+                                <small class="text-muted">Duration: {{ ((appointment.scheduled_end - appointment.scheduled_start).total_seconds() / 60) | int }} minutes</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <strong><i class="bi bi-person"></i> Participants:</strong><br>
+                                <small>
+                                    Candidate: {{ appointment.candidate.name }} ({{ appointment.candidate.email }})<br>
+                                    Interviewer: {{ appointment.interviewer_name }} ({{ appointment.interviewer_email }})
+                                </small>
+                            </div>
+
+                            {% if appointment.google_meet_link %}
+                                <div class="mb-3">
+                                    <a href="{{ appointment.google_meet_link }}" target="_blank" class="btn btn-sm btn-success">
+                                        <i class="bi bi-camera-video"></i> Join Google Meet
+                                    </a>
+                                </div>
+                            {% endif %}
+
+                            {% if appointment.notes %}
+                                <div class="mb-3">
+                                    <strong><i class="bi bi-sticky"></i> Notes:</strong><br>
+                                    <small class="text-muted">{{ appointment.notes }}</small>
+                                </div>
+                            {% endif %}
+
+                            <div class="d-flex gap-2">
+                                <a href="{{ url_for('appointment_detail', appointment_id=appointment.id) }}" class="btn btn-sm btn-outline-info">
+                                    <i class="bi bi-eye"></i> View Details
+                                </a>
+                                
+                                {% if appointment.status == 'scheduled' %}
+                                    <button type="button" class="btn btn-sm btn-outline-warning" 
+                                            data-bs-toggle="modal" data-bs-target="#rescheduleModal{{ appointment.id }}">
+                                        <i class="bi bi-calendar-x"></i> Reschedule
+                                    </button>
+                                    
+                                    <form method="POST" action="{{ url_for('cancel_appointment', appointment_id=appointment.id) }}" 
+                                          class="d-inline" onsubmit="return confirm('Are you sure you want to cancel this appointment?')">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-x-circle"></i> Cancel
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="card-footer text-muted">
+                            <small>Created: {{ appointment.created_at.strftime('%B %d, %Y at %I:%M %p') }}</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reschedule Modal -->
+                {% if appointment.status == 'scheduled' %}
+                    <div class="modal fade" id="rescheduleModal{{ appointment.id }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Reschedule Appointment</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <form method="POST" action="{{ url_for('reschedule_appointment', appointment_id=appointment.id) }}">
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label for="new_start_time{{ appointment.id }}" class="form-label">New Date & Time</label>
+                                            <input type="datetime-local" class="form-control" 
+                                                   id="new_start_time{{ appointment.id }}" name="new_start_time" 
+                                                   value="{{ appointment.scheduled_start.strftime('%Y-%m-%dT%H:%M') }}" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="duration{{ appointment.id }}" class="form-label">Duration (minutes)</label>
+                                            <select class="form-select" id="duration{{ appointment.id }}" name="duration">
+                                                <option value="30">30 minutes</option>
+                                                <option value="45">45 minutes</option>
+                                                <option value="60" selected>60 minutes</option>
+                                                <option value="90">90 minutes</option>
+                                                <option value="120">120 minutes</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-primary">Reschedule</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center">
+            <div class="card">
+                <div class="card-body">
+                    <i class="bi bi-calendar-x display-1 text-muted"></i>
+                    <h4 class="mt-3">No Appointments Found</h4>
+                    <p class="text-muted">You haven't scheduled any interviews yet.</p>
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+                        <i class="bi bi-arrow-left"></i> Go to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+// Set minimum date to today for reschedule forms
+document.querySelectorAll('input[name="new_start_time"]').forEach(input => {
+    input.min = new Date().toISOString().slice(0, 16);
+});
+</script>
+{% endblock %}

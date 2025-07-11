@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Schedule Appointment - {{ candidate.name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3><i class="bi bi-calendar-plus"></i> Schedule Interview Appointment</h3>
+                </div>
+                <div class="card-body">
+                    <!-- Candidate Information -->
+                    <div class="mb-4">
+                        <h5>Candidate Information</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Name:</strong> {{ candidate.name }}<br>
+                                <strong>Email:</strong> {{ candidate.email }}<br>
+                                <strong>Phone:</strong> {{ candidate.phone or 'N/A' }}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Job:</strong> {{ candidate.job.title if candidate.job else 'N/A' }}<br>
+                                <strong>Experience:</strong> {{ candidate.experience_years or 'N/A' }} years
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Appointment Form -->
+                    <form method="POST" action="{{ url_for('create_appointment') }}">
+                        <input type="hidden" name="candidate_id" value="{{ candidate.id }}">
+                        <input type="hidden" name="job_id" value="{{ candidate.job_id }}">
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="interviewer_name" class="form-label">Interviewer Name *</label>
+                                <input type="text" class="form-control" id="interviewer_name" name="interviewer_name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="interviewer_email" class="form-label">Interviewer Email *</label>
+                                <input type="email" class="form-control" id="interviewer_email" name="interviewer_email" required>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="appointment_type" class="form-label">Appointment Type</label>
+                                <select class="form-select" id="appointment_type" name="appointment_type">
+                                    <option value="Interview">Interview</option>
+                                    <option value="Phone Screen">Phone Screen</option>
+                                    <option value="Technical Review">Technical Review</option>
+                                    <option value="Final Interview">Final Interview</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="duration" class="form-label">Duration (minutes)</label>
+                                <select class="form-select" id="duration" name="duration">
+                                    <option value="30">30 minutes</option>
+                                    <option value="45">45 minutes</option>
+                                    <option value="60" selected>60 minutes</option>
+                                    <option value="90">90 minutes</option>
+                                    <option value="120">120 minutes</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="scheduled_start" class="form-label">Scheduled Date & Time *</label>
+                            <input type="datetime-local" class="form-control" id="scheduled_start" name="scheduled_start" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Any additional notes for the appointment..."></textarea>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('candidates', job_id=candidate.job_id) }}" class="btn btn-outline-secondary me-md-2">
+                                <i class="bi bi-arrow-left"></i> Back to Candidates
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-calendar-check"></i> Schedule Appointment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-clock"></i> Available Time Slots</h5>
+                </div>
+                <div class="card-body">
+                    {% if available_slots %}
+                        <div class="mb-3">
+                            <small class="text-muted">Suggested available times (next 7 days):</small>
+                        </div>
+                        <div class="list-group">
+                            {% for slot in available_slots[:10] %}
+                                <a href="#" class="list-group-item list-group-item-action time-slot" 
+                                   data-datetime="{{ slot.start.isoformat() }}">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ slot.start.strftime('%B %d, %Y') }}</h6>
+                                        <small>{{ slot.start.strftime('%I:%M %p') }}</small>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> No available slots found. Please select a custom time.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5><i class="bi bi-info-circle"></i> Meeting Details</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><i class="bi bi-calendar-event"></i> Automatically creates Google Calendar event</li>
+                        <li><i class="bi bi-camera-video"></i> Includes Google Meet link</li>
+                        <li><i class="bi bi-envelope"></i> Sends invitations to all participants</li>
+                        <li><i class="bi bi-bell"></i> Sets up email and popup reminders</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-fill time slots when clicked
+document.querySelectorAll('.time-slot').forEach(slot => {
+    slot.addEventListener('click', function(e) {
+        e.preventDefault();
+        const datetime = this.getAttribute('data-datetime');
+        document.getElementById('scheduled_start').value = datetime.slice(0, 16); // Remove timezone info
+        
+        // Highlight selected slot
+        document.querySelectorAll('.time-slot').forEach(s => s.classList.remove('active'));
+        this.classList.add('active');
+    });
+});
+
+// Set minimum date to today
+document.getElementById('scheduled_start').min = new Date().toISOString().slice(0, 16);
+</script>
+{% endblock %}

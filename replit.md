@@ -46,6 +46,7 @@ Fit2Hire is a Flask-based web application that intelligently matches candidate r
 - **JobDescription**: Stores job postings with extracted requirements, categorized skills, and configurable weights
 - **Candidate**: Contains resume data, extracted information (skills, experience, education), and contact details
 - **MatchScore**: Tracks comprehensive matching results with detailed scoring breakdown and justification
+- **Appointment**: Manages interview scheduling with Google Calendar integration, including event IDs, Meet links, and status tracking
 
 ### Matching Algorithm
 The system uses a multi-criteria scoring approach:
@@ -109,9 +110,18 @@ The system uses a multi-criteria scoring approach:
 - **SESSION_SECRET**: Flask session encryption key
 - **UPLOAD_FOLDER**: Directory for file uploads
 - **MAX_CONTENT_LENGTH**: File upload size limit (16MB)
+- **GOOGLE_CLIENT_ID**: Google OAuth2 client ID for Calendar API
+- **GOOGLE_CLIENT_SECRET**: Google OAuth2 client secret for Calendar API
 
 ## Changelog
 
+- July 11, 2025. Integrated Google Calendar API for appointment scheduling:
+  - Added complete OAuth2 authentication flow for Google Calendar
+  - Created appointment scheduling system with Google Meet integration
+  - Implemented automatic calendar event creation with email notifications
+  - Added appointment management (view, reschedule, cancel) functionality
+  - Updated navigation and UI with calendar features
+  - Enhanced candidate matching interface with schedule interview buttons
 - July 11, 2025. Rebranded application from "Resume Match AI" to "Fit2Hire"
 - June 30, 2025. Initial setup
 

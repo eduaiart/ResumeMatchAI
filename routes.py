@@ -1,14 +1,16 @@
 import os
 import json
 import logging
+from datetime import datetime, timedelta
 from flask import render_template, request, redirect, url_for, flash, jsonify, send_file
 from werkzeug.utils import secure_filename
 from app import app, db
-from models import JobDescription, Candidate, MatchScore
+from models import JobDescription, Candidate, MatchScore, Appointment
 from document_parser import DocumentParser
 from nlp_processor import NLPProcessor
 from matching_engine import MatchingEngine
 from utils import allowed_file, export_candidates_csv
+from google_calendar_service import GoogleCalendarService
 import pandas as pd
 
 # Initialize processors
@@ -299,3 +301,205 @@ def not_found(error):
 @app.errorhandler(500)
 def internal_error(error):
     return render_template('500.html'), 500
+
+
+# Google Calendar Integration Routes
+calendar_service = GoogleCalendarService()
+
+@app.route('/calendar/auth')
+def calendar_auth():
+    """Initialize Google Calendar OAuth flow"""
+    try:
+        auth_url = calendar_service.get_auth_url()
+        return redirect(auth_url)
+    except ValueError as e:
+        flash(f'Google Calendar setup error: {str(e)}', 'error')
+        return redirect(url_for('dashboard'))
+
+@app.route('/oauth2callback')
+def oauth2callback():
+    """Handle Google Calendar OAuth callback"""
+    try:
+        success = calendar_service.handle_oauth_callback(request.url)
+        if success:
+            flash('Successfully connected to Google Calendar!', 'success')
+            return redirect(url_for('dashboard'))
+        else:
+            flash('Failed to connect to Google Calendar. Please try again.', 'error')
+            return redirect(url_for('dashboard'))
+    except Exception as e:
+        flash(f'OAuth error: {str(e)}', 'error')
+        return redirect(url_for('dashboard'))
+
+@app.route('/schedule_appointment/<int:candidate_id>')
+def schedule_appointment(candidate_id):
+    """Show appointment scheduling form"""
+    candidate = Candidate.query.get_or_404(candidate_id)
+    
+    # Check if Google Calendar is authenticated
+    if not calendar_service.is_authenticated():
+        flash('Please connect to Google Calendar first to schedule appointments.', 'warning')
+        return redirect(url_for('calendar_auth'))
+    
+    # Get available time slots (next 7 days)
+    start_date = datetime.now()
+    end_date = start_date + timedelta(days=7)
+    available_slots = calendar_service.get_available_slots(start_date, end_date)
+    
+    return render_template('schedule_appointment.html', 
+                         candidate=candidate, 
+                         available_slots=available_slots)
+
+@app.route('/create_appointment', methods=['POST'])
+def create_appointment():
+    """Create a new appointment"""
+    try:
+        # Get form data
+        candidate_id = request.form.get('candidate_id')
+        job_id = request.form.get('job_id')
+        interviewer_name = request.form.get('interviewer_name')
+        interviewer_email = request.form.get('interviewer_email')
+        appointment_type = request.form.get('appointment_type', 'Interview')
+        scheduled_start = request.form.get('scheduled_start')
+        duration = int(request.form.get('duration', 60))  # Default 60 minutes
+        notes = request.form.get('notes', '')
+        
+        # Validate required fields
+        if not all([candidate_id, job_id, interviewer_name, interviewer_email, scheduled_start]):
+            flash('All required fields must be filled', 'error')
+            return redirect(request.referrer)
+        
+        # Get candidate and job
+        candidate = Candidate.query.get_or_404(candidate_id)
+        job = JobDescription.query.get_or_404(job_id)
+        
+        # Parse datetime
+        start_time = datetime.fromisoformat(scheduled_start)
+        end_time = start_time + timedelta(minutes=duration)
+        
+        # Create Google Calendar event
+        calendar_result = calendar_service.create_appointment(
+            candidate_name=candidate.name,
+            candidate_email=candidate.email,
+            interviewer_name=interviewer_name,
+            interviewer_email=interviewer_email,
+            start_time=start_time,
+            end_time=end_time,
+            job_title=job.title,
+            meeting_type=appointment_type
+        )
+        
+        if calendar_result:
+            # Save to database
+            appointment = Appointment(
+                candidate_id=candidate_id,
+                job_id=job_id,
+                interviewer_name=interviewer_name,
+                interviewer_email=interviewer_email,
+                appointment_type=appointment_type,
+                scheduled_start=start_time,
+                scheduled_end=end_time,
+                google_event_id=calendar_result.get('event_id'),
+                google_meet_link=calendar_result.get('meet_link'),
+                google_calendar_link=calendar_result.get('event_link'),
+                notes=notes
+            )
+            
+            db.session.add(appointment)
+            db.session.commit()
+            
+            flash(f'Appointment scheduled successfully! Google Meet link: {calendar_result.get("meet_link", "N/A")}', 'success')
+            return redirect(url_for('candidates', job_id=job_id))
+        else:
+            flash('Failed to create calendar appointment. Please try again.', 'error')
+            return redirect(request.referrer)
+            
+    except Exception as e:
+        flash(f'Error creating appointment: {str(e)}', 'error')
+        return redirect(request.referrer)
+
+@app.route('/appointments')
+def appointments():
+    """View all appointments"""
+    appointments = Appointment.query.order_by(Appointment.scheduled_start.desc()).all()
+    return render_template('appointments.html', appointments=appointments)
+
+@app.route('/appointment/<int:appointment_id>')
+def appointment_detail(appointment_id):
+    """View appointment details"""
+    appointment = Appointment.query.get_or_404(appointment_id)
+    return render_template('appointment_detail.html', appointment=appointment)
+
+@app.route('/cancel_appointment/<int:appointment_id>', methods=['POST'])
+def cancel_appointment(appointment_id):
+    """Cancel an appointment"""
+    try:
+        appointment = Appointment.query.get_or_404(appointment_id)
+        
+        # Cancel in Google Calendar
+        if appointment.google_event_id:
+            success = calendar_service.cancel_appointment(appointment.google_event_id)
+            if success:
+                appointment.status = 'cancelled'
+                db.session.commit()
+                flash('Appointment cancelled successfully', 'success')
+            else:
+                flash('Failed to cancel calendar event, but appointment marked as cancelled', 'warning')
+                appointment.status = 'cancelled'
+                db.session.commit()
+        else:
+            appointment.status = 'cancelled'
+            db.session.commit()
+            flash('Appointment cancelled successfully', 'success')
+            
+        return redirect(url_for('appointments'))
+        
+    except Exception as e:
+        flash(f'Error cancelling appointment: {str(e)}', 'error')
+        return redirect(url_for('appointments'))
+
+@app.route('/reschedule_appointment/<int:appointment_id>', methods=['POST'])
+def reschedule_appointment(appointment_id):
+    """Reschedule an appointment"""
+    try:
+        appointment = Appointment.query.get_or_404(appointment_id)
+        new_start_time = datetime.fromisoformat(request.form.get('new_start_time'))
+        duration = int(request.form.get('duration', 60))
+        new_end_time = new_start_time + timedelta(minutes=duration)
+        
+        # Update in Google Calendar
+        if appointment.google_event_id:
+            result = calendar_service.update_appointment(
+                appointment.google_event_id,
+                start_time=new_start_time,
+                end_time=new_end_time
+            )
+            
+            if result:
+                appointment.scheduled_start = new_start_time
+                appointment.scheduled_end = new_end_time
+                appointment.status = 'rescheduled'
+                db.session.commit()
+                flash('Appointment rescheduled successfully', 'success')
+            else:
+                flash('Failed to reschedule calendar event', 'error')
+        else:
+            appointment.scheduled_start = new_start_time
+            appointment.scheduled_end = new_end_time
+            appointment.status = 'rescheduled'
+            db.session.commit()
+            flash('Appointment rescheduled successfully', 'success')
+            
+        return redirect(url_for('appointment_detail', appointment_id=appointment_id))
+        
+    except Exception as e:
+        flash(f'Error rescheduling appointment: {str(e)}', 'error')
+        return redirect(url_for('appointment_detail', appointment_id=appointment_id))
+
+@app.route('/calendar/disconnect')
+def calendar_disconnect():
+    """Disconnect from Google Calendar"""
+    if 'google_credentials' in session:
+        del session['google_credentials']
+        flash('Disconnected from Google Calendar', 'info')
+    return redirect(url_for('dashboard'))
