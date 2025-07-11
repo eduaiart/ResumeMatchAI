@@ -43,11 +43,13 @@ class GoogleCalendarService:
     
     def get_redirect_uri(self):
         """Get the OAuth redirect URI based on environment"""
-        base_url = os.environ.get('REPLIT_DOMAIN', 'http://localhost:5000')
-        if base_url.startswith('https://'):
-            return f"{base_url}/oauth2callback"
+        # For Replit deployment, use the proper domain
+        if os.environ.get('REPLIT_DOMAIN'):
+            base_url = f"https://{os.environ.get('REPLIT_DOMAIN')}"
         else:
-            return f"{base_url}/oauth2callback"
+            base_url = 'http://localhost:5000'
+        
+        return f"{base_url}/oauth2callback"
     
     def get_auth_url(self):
         """Get the authorization URL for OAuth flow"""
