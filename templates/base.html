@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Fit2Hire{% endblock %}</title>
+    <title>{% block title %}FIT2HIRE{% endblock %}</title>
     
     <!-- Bootstrap CSS with light theme -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -240,7 +240,7 @@
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('index') }}">
-                <i class="bi bi-robot"></i> Fit2Hire
+                <img src="{{ url_for('static', filename='images/fit2hire-logo.svg') }}" alt="FIT2HIRE" height="40" class="me-2">
             </a>
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -297,7 +297,7 @@
     <footer class="bg-light text-center py-3 mt-5">
         <div class="container">
             <p class="text-muted mb-0">
-                &copy; 2024 Fit2Hire. Powered by spaCy and Flask.
+                &copy; 2024 FIT2HIRE. Powered by spaCy and Flask.
             </p>
         </div>
     </footer>

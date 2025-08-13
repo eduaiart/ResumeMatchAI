@@ -1,8 +1,8 @@
-# Fit2Hire
+# FIT2HIRE
 
 ## Overview
 
-Fit2Hire is a Flask-based web application that intelligently matches candidate resumes to job descriptions using advanced Natural Language Processing (NLP) techniques. The system automatically parses resumes in multiple formats (PDF, DOCX, TXT), extracts relevant information, and provides comprehensive scoring and ranking of candidates based on job requirements.
+FIT2HIRE is a Flask-based web application that intelligently matches candidate resumes to job descriptions using advanced Natural Language Processing (NLP) techniques. The system automatically parses resumes in multiple formats (PDF, DOCX, TXT), extracts relevant information, and provides comprehensive scoring and ranking of candidates based on job requirements.
 
 ## System Architecture
 
@@ -122,6 +122,7 @@ The system uses a multi-criteria scoring approach:
   - Added appointment management (view, reschedule, cancel) functionality
   - Updated navigation and UI with calendar features
   - Enhanced candidate matching interface with schedule interview buttons
+- August 13, 2025. Updated branding from "Fit2Hire" to "FIT2HIRE" with new logo design
 - July 11, 2025. Rebranded application from "Resume Match AI" to "Fit2Hire"
 - June 30, 2025. Initial setup
 

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Home - Fit2Hire{% endblock %}
+{% block title %}Home - FIT2HIRE{% endblock %}
 
 {% block content %}
 <div class="row">
@@ -9,7 +9,7 @@
         <div class="card border-0 bg-primary text-white mb-4">
             <div class="card-body p-5">
                 <h1 class="display-4 fw-bold mb-3">
-                    <i class="bi bi-robot"></i> Fit2Hire
+                    <img src="{{ url_for('static', filename='images/fit2hire-logo.svg') }}" alt="FIT2HIRE" height="60" class="me-3">
                 </h1>
                 <p class="lead mb-4">
                     Intelligent resume screening powered by advanced NLP. Automatically match candidates 

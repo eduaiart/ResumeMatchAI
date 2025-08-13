@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="80" viewBox="0 0 300 80">
+  <rect x="0" y="0" width="300" height="80" fill="none" stroke="#000" stroke-width="3"/>
+  <rect x="10" y="10" width="130" height="60" fill="#000"/>
+  <text x="75" y="50" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#fff" text-anchor="middle">FIT</text>
+  <text x="200" y="50" font-family="Arial, sans-serif" font-size="36" font-weight="bold" fill="#1E90FF" text-anchor="middle">2</text>
+  <text x="255" y="50" font-family="Arial, sans-serif" font-size="28" font-weight="bold" fill="#000" text-anchor="middle">HIRE</text>
+</svg>
